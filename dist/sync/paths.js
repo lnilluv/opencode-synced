@@ -90,6 +90,25 @@ export function normalizePath(inputPath, homeDir, platform = process.platform) {
 export function isSamePath(left, right, homeDir, platform = process.platform) {
     return normalizePath(left, homeDir, platform) === normalizePath(right, homeDir, platform);
 }
+function pathsOverlap(left, right, homeDir, platform = process.platform) {
+    const normalizedLeft = normalizePath(left, homeDir, platform);
+    const normalizedRight = normalizePath(right, homeDir, platform);
+    if (normalizedLeft === normalizedRight) {
+        return true;
+    }
+    const rightWithinLeft = path.relative(normalizedLeft, normalizedRight);
+    if (rightWithinLeft !== '' &&
+        rightWithinLeft !== '..' &&
+        !rightWithinLeft.startsWith(`..${path.sep}`) &&
+        !path.isAbsolute(rightWithinLeft)) {
+        return true;
+    }
+    const leftWithinRight = path.relative(normalizedRight, normalizedLeft);
+    return (leftWithinRight !== '' &&
+        leftWithinRight !== '..' &&
+        !leftWithinRight.startsWith(`..${path.sep}`) &&
+        !path.isAbsolute(leftWithinRight));
+}
 export function encodeExtraPath(inputPath) {
     const normalized = inputPath.replace(/\\/g, '/');
     const safeBase = normalized.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+/, '');
@@ -220,7 +239,12 @@ export function buildSyncPlan(config, locations, repoRoot, platform = process.pl
         ? extraSecretPaths.filter((entry) => !isSamePath(entry, authJsonPath, locations.xdg.homeDir, platform) &&
             !isSamePath(entry, mcpAuthJsonPath, locations.xdg.homeDir, platform))
         : extraSecretPaths;
-    const extraSecrets = buildExtraPathPlan(filteredExtraSecrets, locations, repoExtraDir, manifestPath, platform);
+    const blockedSessionPaths = [
+        ...SESSION_DB_FILES.map((fileName) => path.join(dataRoot, fileName)),
+        ...SESSION_DIRS.map((dirName) => path.join(dataRoot, dirName)),
+    ];
+    const filteredNonSessionSecrets = filteredExtraSecrets.filter((entry) => !blockedSessionPaths.some((blockedPath) => pathsOverlap(entry, blockedPath, locations.xdg.homeDir, platform)));
+    const extraSecrets = buildExtraPathPlan(filteredNonSessionSecrets, locations, repoExtraDir, manifestPath, platform);
     const extraConfigPaths = (config.extraConfigPaths ?? []).filter((entry) => !isSamePath(entry, locations.syncConfigPath, locations.xdg.homeDir, platform));
     const extraConfigs = buildExtraPathPlan(extraConfigPaths, locations, repoConfigExtraDir, configManifestPath, platform);
     return {

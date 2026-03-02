@@ -84,6 +84,15 @@ describe('normalizeSyncConfig', () => {
     expect(normalized.extraSecretPaths).toEqual([]);
     expect(normalized.extraConfigPaths).toEqual([]);
   });
+
+  it('forces sessions to remain disabled even when requested', () => {
+    const normalized = normalizeSyncConfig({
+      includeSecrets: true,
+      includeSessions: true,
+    });
+
+    expect(normalized.includeSessions).toBe(false);
+  });
 });
 
 describe('normalizeSecretsBackend', () => {

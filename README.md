@@ -108,25 +108,10 @@ in a private repo, set `"includeMcpSecrets": true` (requires `includeSecrets`).
 
 ### Sessions (private repos only)
 
-Sync your opencode sessions (conversation history from `/sessions`) across machines by setting `"includeSessions": true`. This requires `includeSecrets` to also be enabled since sessions may contain sensitive data.
-
-```jsonc
-{
-  "repo": { ... },
-  "includeSecrets": true,
-  "includeSessions": true
-}
-```
-
-Synced session data:
-
-- `~/.local/share/opencode/opencode.db` - Session database
-- `~/.local/share/opencode/opencode.db-shm` - SQLite shared memory sidecar (when present)
-- `~/.local/share/opencode/opencode.db-wal` - SQLite WAL sidecar (when present)
-- `~/.local/share/opencode/storage/session/` - Session files
-- `~/.local/share/opencode/storage/message/` - Message history
-- `~/.local/share/opencode/storage/part/` - Message parts
-- `~/.local/share/opencode/storage/session_diff/` - Session diffs
+Session sync is intentionally disabled. This plugin never syncs session artifacts
+(`opencode.db`, `opencode.db-shm`, `opencode.db-wal`, `storage/session`,
+`storage/message`, `storage/part`, `storage/session_diff`) to avoid large-file
+push failures.
 
 ### Prompt Stash (private repos only)
 

@@ -237,8 +237,36 @@ describe('buildSyncPlan', () => {
       plan.items.filter((item) => item.isSecret).map((item) => item.localPath)
     );
 
-    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db')).toBe(true);
-    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db-shm')).toBe(true);
-    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db-wal')).toBe(true);
+    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db')).toBe(false);
+    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db-shm')).toBe(false);
+    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db-wal')).toBe(false);
+  });
+
+  it('filters session data root from extra secret paths', () => {
+    const env = { HOME: '/home/test' } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+    const config: SyncConfig = {
+      repo: { owner: 'acme', name: 'config' },
+      includeSecrets: true,
+      extraSecretPaths: ['/home/test/.local/share/opencode/storage', '/home/test/.ssh/id_rsa'],
+    };
+
+    const plan = buildSyncPlan(normalizeSyncConfig(config), locations, '/repo', 'linux');
+
+    expect(plan.extraSecrets.allowlist).toEqual(['/home/test/.ssh/id_rsa']);
+  });
+
+  it('filters sqlite database files from extra secret paths', () => {
+    const env = { HOME: '/home/test' } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+    const config: SyncConfig = {
+      repo: { owner: 'acme', name: 'config' },
+      includeSecrets: true,
+      extraSecretPaths: ['/home/test/.local/share/opencode/opencode.db', '/home/test/.ssh/id_rsa'],
+    };
+
+    const plan = buildSyncPlan(normalizeSyncConfig(config), locations, '/repo', 'linux');
+
+    expect(plan.extraSecrets.allowlist).toEqual(['/home/test/.ssh/id_rsa']);
   });
 });

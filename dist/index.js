@@ -118,7 +118,7 @@ export const opencodeConfigSync = async (ctx) => {
             includeSessions: tool.schema
                 .boolean()
                 .optional()
-                .describe('Enable session sync (requires includeSecrets)'),
+                .describe('Ignored: session sync is disabled to avoid large-file pushes'),
             includePromptStash: tool.schema
                 .boolean()
                 .optional()

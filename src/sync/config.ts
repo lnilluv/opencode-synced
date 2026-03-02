@@ -109,7 +109,7 @@ export function normalizeSyncConfig(config: SyncConfig): NormalizedSyncConfig {
   return {
     includeSecrets,
     includeMcpSecrets: includeSecrets ? Boolean(config.includeMcpSecrets) : false,
-    includeSessions: Boolean(config.includeSessions),
+    includeSessions: false,
     includePromptStash: Boolean(config.includePromptStash),
     includeModelFavorites,
     secretsBackend: normalizeSecretsBackend(config.secretsBackend),

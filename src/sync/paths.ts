@@ -162,6 +162,38 @@ export function isSamePath(
   return normalizePath(left, homeDir, platform) === normalizePath(right, homeDir, platform);
 }
 
+function pathsOverlap(
+  left: string,
+  right: string,
+  homeDir: string,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  const normalizedLeft = normalizePath(left, homeDir, platform);
+  const normalizedRight = normalizePath(right, homeDir, platform);
+
+  if (normalizedLeft === normalizedRight) {
+    return true;
+  }
+
+  const rightWithinLeft = path.relative(normalizedLeft, normalizedRight);
+  if (
+    rightWithinLeft !== '' &&
+    rightWithinLeft !== '..' &&
+    !rightWithinLeft.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(rightWithinLeft)
+  ) {
+    return true;
+  }
+
+  const leftWithinRight = path.relative(normalizedRight, normalizedLeft);
+  return (
+    leftWithinRight !== '' &&
+    leftWithinRight !== '..' &&
+    !leftWithinRight.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(leftWithinRight)
+  );
+}
+
 export function encodeExtraPath(inputPath: string): string {
   const normalized = inputPath.replace(/\\/g, '/');
   const safeBase = normalized.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+/, '');
@@ -326,8 +358,20 @@ export function buildSyncPlan(
       )
     : extraSecretPaths;
 
+  const blockedSessionPaths = [
+    ...SESSION_DB_FILES.map((fileName) => path.join(dataRoot, fileName)),
+    ...SESSION_DIRS.map((dirName) => path.join(dataRoot, dirName)),
+  ];
+
+  const filteredNonSessionSecrets = filteredExtraSecrets.filter(
+    (entry) =>
+      !blockedSessionPaths.some((blockedPath) =>
+        pathsOverlap(entry, blockedPath, locations.xdg.homeDir, platform)
+      )
+  );
+
   const extraSecrets = buildExtraPathPlan(
-    filteredExtraSecrets,
+    filteredNonSessionSecrets,
     locations,
     repoExtraDir,
     manifestPath,
