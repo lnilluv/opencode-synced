@@ -120,6 +120,9 @@ Sync your opencode sessions (conversation history from `/sessions`) across machi
 
 Synced session data:
 
+- `~/.local/share/opencode/opencode.db` - Session database
+- `~/.local/share/opencode/opencode.db-shm` - SQLite shared memory sidecar (when present)
+- `~/.local/share/opencode/opencode.db-wal` - SQLite WAL sidecar (when present)
 - `~/.local/share/opencode/storage/session/` - Session files
 - `~/.local/share/opencode/storage/message/` - Message history
 - `~/.local/share/opencode/storage/part/` - Message parts
