@@ -40,6 +40,7 @@ export interface SyncPlan {
   extraSecrets: ExtraPathPlan;
   extraConfigs: ExtraPathPlan;
   repoRoot: string;
+  configRoot: string;
   homeDir: string;
   platform: NodeJS.Platform;
 }
@@ -339,6 +340,7 @@ export function buildSyncPlan(
     extraSecrets,
     extraConfigs,
     repoRoot,
+    configRoot,
     homeDir: locations.xdg.homeDir,
     platform,
   };

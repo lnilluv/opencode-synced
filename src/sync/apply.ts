@@ -47,6 +47,8 @@ export async function syncRepoToLocal(
     await copyItem(item.repoPath, item.localPath, item.type);
   }
 
+  await rewriteAbsoluteOpencodeSymlinks(plan.configRoot, plan.configRoot);
+
   await applyExtraPaths(plan, plan.extraConfigs);
   await applyExtraPaths(plan, plan.extraSecrets);
 
@@ -100,6 +102,11 @@ export async function syncLocalToRepo(
 
     await copyItem(item.localPath, item.repoPath, item.type, true);
   }
+
+  await rewriteAbsoluteOpencodeSymlinks(
+    path.join(plan.repoRoot, 'config'),
+    path.join(plan.repoRoot, 'config')
+  );
 
   await writeExtraPathManifest(plan, plan.extraConfigs);
   await writeExtraPathManifest(plan, plan.extraSecrets);
@@ -214,10 +221,22 @@ async function copyDirRecursive(sourcePath: string, destinationPath: string): Pr
 
     if (entry.isFile()) {
       await copyFileWithMode(entrySource, entryDest);
+      continue;
+    }
+
+    if (entry.isSymbolicLink()) {
+      await copySymlink(entrySource, entryDest);
     }
   }
 
   await chmodIfExists(destinationPath, stat.mode & 0o777);
+}
+
+async function copySymlink(sourcePath: string, destinationPath: string): Promise<void> {
+  const linkTarget = await fs.readlink(sourcePath);
+  await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+  await removePath(destinationPath);
+  await fs.symlink(linkTarget, destinationPath);
 }
 
 async function removePath(targetPath: string): Promise<void> {
@@ -423,4 +442,55 @@ function isDeepEqual(left: unknown, right: unknown): boolean {
   }
 
   return false;
+}
+
+async function rewriteAbsoluteOpencodeSymlinks(
+  rootPath: string,
+  opencodeRoot: string
+): Promise<void> {
+  if (!(await pathExists(rootPath))) return;
+
+  const entries = await fs.readdir(rootPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(rootPath, entry.name);
+
+    if (entry.isDirectory()) {
+      await rewriteAbsoluteOpencodeSymlinks(entryPath, opencodeRoot);
+      continue;
+    }
+
+    if (!entry.isSymbolicLink()) {
+      continue;
+    }
+
+    const linkTarget = await fs.readlink(entryPath);
+    if (!path.isAbsolute(linkTarget)) {
+      continue;
+    }
+
+    const mappedTarget = mapAbsoluteOpencodePath(linkTarget, opencodeRoot);
+    if (!mappedTarget) {
+      continue;
+    }
+
+    const portableTarget = path.relative(path.dirname(entryPath), mappedTarget);
+    await removePath(entryPath);
+    await fs.symlink(portableTarget, entryPath);
+  }
+}
+
+function mapAbsoluteOpencodePath(absoluteTarget: string, opencodeRoot: string): string | null {
+  const normalized = absoluteTarget.replace(/\\/g, '/');
+  const marker = '/.config/opencode/';
+  const markerIndex = normalized.indexOf(marker);
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  const suffix = normalized.slice(markerIndex + marker.length);
+  if (!suffix) {
+    return opencodeRoot;
+  }
+
+  return path.join(opencodeRoot, ...suffix.split('/').filter(Boolean));
 }
