@@ -222,4 +222,23 @@ describe('buildSyncPlan', () => {
 
     expect(disabledItem).toBeUndefined();
   });
+
+  it('includes sqlite session store files when includeSessions is enabled', () => {
+    const env = { HOME: '/home/test' } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+    const config: SyncConfig = {
+      repo: { owner: 'acme', name: 'config' },
+      includeSecrets: true,
+      includeSessions: true,
+    };
+
+    const plan = buildSyncPlan(normalizeSyncConfig(config), locations, '/repo', 'linux');
+    const localPaths = new Set(
+      plan.items.filter((item) => item.isSecret).map((item) => item.localPath)
+    );
+
+    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db')).toBe(true);
+    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db-shm')).toBe(true);
+    expect(localPaths.has('/home/test/.local/share/opencode/opencode.db-wal')).toBe(true);
+  });
 });

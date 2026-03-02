@@ -66,6 +66,7 @@ const CONFIG_DIRS = [
   'superpowers',
 ];
 const SESSION_DIRS = ['storage/session', 'storage/message', 'storage/part', 'storage/session_diff'];
+const SESSION_DB_FILES = ['opencode.db', 'opencode.db-shm', 'opencode.db-wal'];
 const PROMPT_STASH_FILES = ['prompt-stash.jsonl', 'prompt-history.jsonl'];
 const MODEL_FAVORITES_FILE = 'model.json';
 
@@ -282,6 +283,16 @@ export function buildSyncPlan(
     }
 
     if (config.includeSessions) {
+      for (const fileName of SESSION_DB_FILES) {
+        items.push({
+          localPath: path.join(dataRoot, fileName),
+          repoPath: path.join(repoDataRoot, fileName),
+          type: 'file',
+          isSecret: true,
+          isConfigFile: false,
+        });
+      }
+
       for (const dirName of SESSION_DIRS) {
         items.push({
           localPath: path.join(dataRoot, dirName),
