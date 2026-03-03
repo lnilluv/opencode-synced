@@ -27,6 +27,27 @@ describe('resolveXdgPaths', () => {
 });
 
 describe('resolveSyncLocations', () => {
+  it('prefers OPENCODE_CONFIG_DIR when set', () => {
+    const env = {
+      HOME: '/home/test',
+      OPENCODE_CONFIG_DIR: '/custom/uppercase',
+      opencode_config_dir: '/custom/lowercase',
+    } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+
+    expect(locations.configRoot).toBe('/custom/uppercase');
+  });
+
+  it('falls back to opencode_config_dir for backwards compatibility', () => {
+    const env = {
+      HOME: '/home/test',
+      opencode_config_dir: '/custom/lowercase',
+    } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+
+    expect(locations.configRoot).toBe('/custom/lowercase');
+  });
+
   it('respects opencode_config_dir', () => {
     const env = {
       HOME: '/home/test',
@@ -57,6 +78,25 @@ describe('buildSyncPlan', () => {
     expect(localPaths.has('/home/test/.config/opencode/plugins')).toBe(true);
     expect(localPaths.has('/home/test/.config/opencode/skills')).toBe(true);
     expect(localPaths.has('/home/test/.config/opencode/superpowers')).toBe(true);
+  });
+
+  it('includes both plural and legacy singular config directory names', () => {
+    const env = { HOME: '/home/test' } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+    const config: SyncConfig = {
+      repo: { owner: 'acme', name: 'config' },
+      includeSecrets: false,
+    };
+
+    const plan = buildSyncPlan(normalizeSyncConfig(config), locations, '/repo', 'linux');
+    const localPaths = new Set(plan.items.map((item) => item.localPath));
+
+    expect(localPaths.has('/home/test/.config/opencode/command')).toBe(true);
+    expect(localPaths.has('/home/test/.config/opencode/mode')).toBe(true);
+    expect(localPaths.has('/home/test/.config/opencode/tool')).toBe(true);
+    expect(localPaths.has('/home/test/.config/opencode/commands')).toBe(true);
+    expect(localPaths.has('/home/test/.config/opencode/modes')).toBe(true);
+    expect(localPaths.has('/home/test/.config/opencode/tools')).toBe(true);
   });
 
   it('excludes secrets when includeSecrets is false', () => {

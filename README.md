@@ -11,6 +11,7 @@ Sync global opencode configuration across machines via a GitHub repo, with optio
 - Startup auto-sync with restart toast
 - Per-machine overrides via `opencode-synced.overrides.jsonc`
 - Custom `/sync-*` commands and `opencode_sync` tool
+- Auto-repairs superpowers links (`skills/superpowers`, `plugins/superpowers.js`) on pull/push
 
 ## Requirements
 
@@ -89,11 +90,14 @@ Create `~/.config/opencode/opencode-synced.jsonc`:
 - `~/.config/opencode/opencode.json` and `opencode.jsonc`
 - `~/.config/opencode/AGENTS.md`
 - `~/.config/opencode/agent/`, `command/`, `mode/`, `tool/`, `themes/`, `plugin/`
+- `~/.config/opencode/commands/`, `modes/`, `tools/` (plural OpenCode directories)
 - `~/.config/opencode/agents/`, `instructions/`, `plugins/`, `skills/`, `superpowers/`
 - `~/.local/state/opencode/model.json` (model favorites)
 - Any extra paths in `extraConfigPaths` (allowlist, files or folders)
 
 Extra path manifests store home-relative `~` paths when possible to avoid Linux/macOS/WSL path churn.
+
+`OPENCODE_CONFIG_DIR` and `opencode_config_dir` are both supported for custom config roots.
 
 ### Secrets (private repos only)
 

@@ -4,3 +4,4 @@ export declare function syncLocalToRepo(plan: SyncPlan, overrides: Record<string
     overridesPath?: string;
     allowMcpSecrets?: boolean;
 }): Promise<void>;
+export declare function normalizeSymlinkLinkValue(linkValue: string): string;

@@ -55,8 +55,11 @@ const DEFAULT_STATE_NAME = 'sync-state.json';
 const CONFIG_DIRS = [
   'agent',
   'command',
+  'commands',
   'mode',
+  'modes',
   'tool',
+  'tools',
   'themes',
   'plugin',
   'agents',
@@ -116,7 +119,7 @@ export function resolveSyncLocations(
   platform: NodeJS.Platform = process.platform
 ): SyncLocations {
   const xdg = resolveXdgPaths(env, platform);
-  const customConfigDir = env.opencode_config_dir;
+  const customConfigDir = env.OPENCODE_CONFIG_DIR ?? env.opencode_config_dir;
   const configRoot = customConfigDir
     ? path.resolve(expandHome(customConfigDir, xdg.homeDir))
     : path.join(xdg.configDir, 'opencode');
