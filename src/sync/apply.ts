@@ -115,6 +115,10 @@ export async function syncLocalToRepo(
   await writeExtraPathManifest(plan, plan.extraSecrets);
 }
 
+export function normalizeSymlinkLinkValue(linkValue: string): string {
+  return linkValue.replace(/\\/g, '/');
+}
+
 async function copyItem(
   sourcePath: string,
   destinationPath: string,
@@ -521,7 +525,9 @@ async function ensureRelativeSymlink(linkPath: string, targetPath: string): Prom
   }
 
   const expectedTarget = path.resolve(targetPath);
-  const expectedLinkValue = path.relative(path.dirname(linkPath), expectedTarget);
+  const expectedLinkValue = normalizeSymlinkLinkValue(
+    path.relative(path.dirname(linkPath), expectedTarget)
+  );
 
   const existing = await getPathLstat(linkPath);
   if (existing && !existing.isSymbolicLink()) {
@@ -531,8 +537,9 @@ async function ensureRelativeSymlink(linkPath: string, targetPath: string): Prom
   if (existing?.isSymbolicLink()) {
     const currentLinkValue = await fs.readlink(linkPath);
     const currentResolvedTarget = path.resolve(path.dirname(linkPath), currentLinkValue);
+    const normalizedCurrentLinkValue = normalizeSymlinkLinkValue(currentLinkValue);
     const isCorrectTarget = currentResolvedTarget === expectedTarget;
-    const isPortableTarget = currentLinkValue === expectedLinkValue;
+    const isPortableTarget = normalizedCurrentLinkValue === expectedLinkValue;
     if (isCorrectTarget && isPortableTarget) {
       return;
     }

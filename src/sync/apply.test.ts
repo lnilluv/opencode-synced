@@ -13,7 +13,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { syncLocalToRepo, syncRepoToLocal } from './apply.js';
+import { normalizeSymlinkLinkValue, syncLocalToRepo, syncRepoToLocal } from './apply.js';
 import type { SyncPlan } from './paths.js';
 import { normalizePath } from './paths.js';
 
@@ -601,5 +601,12 @@ describe('writeExtraPathManifest', () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe('normalizeSymlinkLinkValue', () => {
+  it('normalizes windows separators to portable unix separators', () => {
+    expect(normalizeSymlinkLinkValue('..\\superpowers\\skills')).toBe('../superpowers/skills');
+    expect(normalizeSymlinkLinkValue('../superpowers/skills')).toBe('../superpowers/skills');
   });
 });
