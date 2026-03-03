@@ -391,10 +391,10 @@ async function ensureRelativeSymlink(linkPath, targetPath) {
     }
     if (existing?.isSymbolicLink()) {
         const currentLinkValue = await fs.readlink(linkPath);
-        const currentResolvedTarget = path.resolve(path.dirname(linkPath), currentLinkValue);
         const normalizedCurrentLinkValue = normalizeSymlinkLinkValue(currentLinkValue);
+        const currentResolvedTarget = path.resolve(path.dirname(linkPath), normalizedCurrentLinkValue);
         const isCorrectTarget = currentResolvedTarget === expectedTarget;
-        const isPortableTarget = normalizedCurrentLinkValue === expectedLinkValue;
+        const isPortableTarget = currentLinkValue === expectedLinkValue;
         if (isCorrectTarget && isPortableTarget) {
             return;
         }
