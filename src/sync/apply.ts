@@ -51,6 +51,7 @@ export async function syncRepoToLocal(
 
   await applyExtraPaths(plan, plan.extraConfigs);
   await applyExtraPaths(plan, plan.extraSecrets);
+  await ensureOpencodeCompatibilitySymlinks(plan.configRoot);
 
   if (overrides && Object.keys(overrides).length > 0) {
     await applyOverridesToLocalConfig(plan, overrides);
@@ -66,6 +67,8 @@ export async function syncLocalToRepo(
   const sanitizedConfigs = new Map<string, Record<string, unknown>>();
   let secretOverrides: Record<string, unknown> = {};
   const allowMcpSecrets = Boolean(options.allowMcpSecrets);
+
+  await ensureOpencodeCompatibilitySymlinks(plan.configRoot);
 
   for (const item of configItems) {
     if (!(await pathExists(item.localPath))) continue;
@@ -282,7 +285,8 @@ async function writeExtraPathManifest(plan: SyncPlan, extra: ExtraPathPlan): Pro
   const entries: ExtraPathManifestEntry[] = [];
 
   for (const entry of extra.entries) {
-    const sourcePath = entry.sourcePath;
+    const sourcePath = expandHome(entry.sourcePath, plan.homeDir);
+    const manifestSourcePath = entry.sourcePath;
     if (!(await pathExists(sourcePath))) {
       continue;
     }
@@ -291,7 +295,7 @@ async function writeExtraPathManifest(plan: SyncPlan, extra: ExtraPathPlan): Pro
       await copyDirRecursive(sourcePath, entry.repoPath);
       const items = await collectExtraPathItems(sourcePath, sourcePath);
       entries.push({
-        sourcePath,
+        sourcePath: manifestSourcePath,
         repoPath: path.relative(plan.repoRoot, entry.repoPath),
         type: 'dir',
         mode: stat.mode & 0o777,
@@ -302,7 +306,7 @@ async function writeExtraPathManifest(plan: SyncPlan, extra: ExtraPathPlan): Pro
     if (stat.isFile()) {
       await copyFileWithMode(sourcePath, entry.repoPath);
       entries.push({
-        sourcePath,
+        sourcePath: manifestSourcePath,
         repoPath: path.relative(plan.repoRoot, entry.repoPath),
         type: 'file',
         mode: stat.mode & 0o777,
@@ -493,4 +497,61 @@ function mapAbsoluteOpencodePath(absoluteTarget: string, opencodeRoot: string): 
   }
 
   return path.join(opencodeRoot, ...suffix.split('/').filter(Boolean));
+}
+
+async function ensureOpencodeCompatibilitySymlinks(configRoot: string): Promise<void> {
+  const skillTarget = path.join(configRoot, 'superpowers', 'skills');
+  const skillLink = path.join(configRoot, 'skills', 'superpowers');
+  await ensureRelativeSymlink(skillLink, skillTarget);
+
+  const pluginTarget = path.join(
+    configRoot,
+    'superpowers',
+    '.opencode',
+    'plugins',
+    'superpowers.js'
+  );
+  const pluginLink = path.join(configRoot, 'plugins', 'superpowers.js');
+  await ensureRelativeSymlink(pluginLink, pluginTarget);
+}
+
+async function ensureRelativeSymlink(linkPath: string, targetPath: string): Promise<void> {
+  if (!(await pathExists(targetPath))) {
+    return;
+  }
+
+  const expectedTarget = path.resolve(targetPath);
+  const expectedLinkValue = path.relative(path.dirname(linkPath), expectedTarget);
+
+  const existing = await getPathLstat(linkPath);
+  if (existing && !existing.isSymbolicLink()) {
+    return;
+  }
+
+  if (existing?.isSymbolicLink()) {
+    const currentLinkValue = await fs.readlink(linkPath);
+    const currentResolvedTarget = path.resolve(path.dirname(linkPath), currentLinkValue);
+    const isCorrectTarget = currentResolvedTarget === expectedTarget;
+    const isPortableTarget = currentLinkValue === expectedLinkValue;
+    if (isCorrectTarget && isPortableTarget) {
+      return;
+    }
+    await removePath(linkPath);
+  }
+
+  await fs.mkdir(path.dirname(linkPath), { recursive: true });
+  await fs.symlink(expectedLinkValue, linkPath);
+}
+
+async function getPathLstat(
+  targetPath: string
+): Promise<Awaited<ReturnType<typeof fs.lstat>> | null> {
+  try {
+    return await fs.lstat(targetPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
 }
