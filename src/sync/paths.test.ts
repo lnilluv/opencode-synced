@@ -48,6 +48,28 @@ describe('resolveSyncLocations', () => {
     expect(locations.configRoot).toBe('/custom/lowercase');
   });
 
+  it('treats blank OPENCODE_CONFIG_DIR as unset and uses lowercase fallback', () => {
+    const env = {
+      HOME: '/home/test',
+      OPENCODE_CONFIG_DIR: '   ',
+      opencode_config_dir: '/custom/lowercase',
+    } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+
+    expect(locations.configRoot).toBe('/custom/lowercase');
+  });
+
+  it('treats blank custom config env vars as unset and uses XDG default', () => {
+    const env = {
+      HOME: '/home/test',
+      OPENCODE_CONFIG_DIR: '',
+      opencode_config_dir: '   ',
+    } as NodeJS.ProcessEnv;
+    const locations = resolveSyncLocations(env, 'linux');
+
+    expect(locations.configRoot).toBe('/home/test/.config/opencode');
+  });
+
   it('respects opencode_config_dir', () => {
     const env = {
       HOME: '/home/test',

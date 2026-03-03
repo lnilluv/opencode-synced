@@ -97,7 +97,7 @@ Create `~/.config/opencode/opencode-synced.jsonc`:
 
 Extra path manifests store home-relative `~` paths when possible to avoid Linux/macOS/WSL path churn.
 
-`OPENCODE_CONFIG_DIR` and `opencode_config_dir` are both supported for custom config roots.
+`OPENCODE_CONFIG_DIR` and `opencode_config_dir` are both supported for custom config roots, and `OPENCODE_CONFIG_DIR` takes precedence when both are set.
 
 ### Secrets (private repos only)
 
