@@ -57,7 +57,9 @@ export function resolveXdgPaths(env = process.env, platform = process.platform) 
 }
 export function resolveSyncLocations(env = process.env, platform = process.platform) {
     const xdg = resolveXdgPaths(env, platform);
-    const customConfigDir = env.OPENCODE_CONFIG_DIR ?? env.opencode_config_dir;
+    const upperConfigDir = env.OPENCODE_CONFIG_DIR?.trim();
+    const lowerConfigDir = env.opencode_config_dir?.trim();
+    const customConfigDir = upperConfigDir || lowerConfigDir;
     const configRoot = customConfigDir
         ? path.resolve(expandHome(customConfigDir, xdg.homeDir))
         : path.join(xdg.configDir, 'opencode');
