@@ -1,5 +1,19 @@
 # opencode-synced
 
+## Project origin and credits
+
+- **Original project and primary credit:** [`iHildy/opencode-synced`](https://github.com/iHildy/opencode-synced) by **@iHildy**
+- **This repository:** [`lnilluv/opencode-synced`](https://github.com/lnilluv/opencode-synced) is a detached continuation of that project
+- **Attribution:** The original architecture, concept, and baseline implementation belong to the original owner; this repo keeps that foundation and adds maintenance-focused improvements
+
+### Modifications in this repository
+
+- Cross-platform sync hardening for Linux/macOS/Windows path portability
+- Automatic repair of compatibility symlinks for `skills/superpowers` and `plugins/superpowers.js`
+- Environment variable compatibility updates for config root selection (`OPENCODE_CONFIG_DIR` precedence with legacy fallback)
+- Expanded support for modern OpenCode directory variants (`commands`, `modes`, `tools`) alongside legacy names
+- Home-relative extra-path manifest handling improvements for stable multi-machine syncing
+
 Sync global opencode configuration across machines via a GitHub repo, with optional secrets support for private repos.
 
 ## Features
