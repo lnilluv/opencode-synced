@@ -444,6 +444,113 @@ describe('cross-platform compatibility symlink repair', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('replaces non-symlink compatibility paths during repo-to-local sync', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'opencode-sync-compat-'));
+    try {
+      const homeDir = path.join(tempDir, 'home');
+      const configRoot = path.join(homeDir, '.config', 'opencode');
+      const repoRoot = path.join(tempDir, 'repo');
+      const repoConfigRoot = path.join(repoRoot, 'config');
+
+      const repoSkillTarget = path.join(
+        repoConfigRoot,
+        'superpowers',
+        'skills',
+        'sample',
+        'SKILL.md'
+      );
+      const repoPluginTarget = path.join(
+        repoConfigRoot,
+        'superpowers',
+        '.opencode',
+        'plugins',
+        'superpowers.js'
+      );
+      const legacySkillPath = path.join(repoConfigRoot, 'skills', 'superpowers');
+      const legacyPluginPath = path.join(repoConfigRoot, 'plugins', 'superpowers.js');
+
+      await mkdir(path.dirname(repoSkillTarget), { recursive: true });
+      await mkdir(path.dirname(repoPluginTarget), { recursive: true });
+      await mkdir(legacySkillPath, { recursive: true });
+      await mkdir(path.dirname(legacyPluginPath), { recursive: true });
+      await writeFile(repoSkillTarget, '# sample\n', 'utf8');
+      await writeFile(repoPluginTarget, 'export default {}\n', 'utf8');
+      await writeFile(path.join(legacySkillPath, 'stale.txt'), 'stale\n', 'utf8');
+      await writeFile(legacyPluginPath, 'stale\n', 'utf8');
+
+      const plan = createCompatibilityPlan({
+        configRoot,
+        repoRoot,
+        homeDir,
+        platform: 'linux',
+      });
+
+      await syncRepoToLocal(plan, null);
+
+      const localSkillLink = path.join(configRoot, 'skills', 'superpowers');
+      const localPluginLink = path.join(configRoot, 'plugins', 'superpowers.js');
+
+      expect((await lstat(localSkillLink)).isSymbolicLink()).toBe(true);
+      expect((await lstat(localPluginLink)).isSymbolicLink()).toBe(true);
+      expect(await readlink(localSkillLink)).toBe('../superpowers/skills');
+      expect(await readlink(localPluginLink)).toBe(
+        '../superpowers/.opencode/plugins/superpowers.js'
+      );
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('replaces non-symlink compatibility paths during local-to-repo sync', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'opencode-sync-compat-'));
+    try {
+      const homeDir = path.join(tempDir, 'home');
+      const configRoot = path.join(homeDir, '.config', 'opencode');
+      const repoRoot = path.join(tempDir, 'repo');
+
+      const localSkillTarget = path.join(configRoot, 'superpowers', 'skills', 'sample', 'SKILL.md');
+      const localPluginTarget = path.join(
+        configRoot,
+        'superpowers',
+        '.opencode',
+        'plugins',
+        'superpowers.js'
+      );
+      const legacySkillPath = path.join(configRoot, 'skills', 'superpowers');
+      const legacyPluginPath = path.join(configRoot, 'plugins', 'superpowers.js');
+
+      await mkdir(path.dirname(localSkillTarget), { recursive: true });
+      await mkdir(path.dirname(localPluginTarget), { recursive: true });
+      await mkdir(legacySkillPath, { recursive: true });
+      await mkdir(path.dirname(legacyPluginPath), { recursive: true });
+      await writeFile(localSkillTarget, '# sample\n', 'utf8');
+      await writeFile(localPluginTarget, 'export default {}\n', 'utf8');
+      await writeFile(path.join(legacySkillPath, 'stale.txt'), 'stale\n', 'utf8');
+      await writeFile(legacyPluginPath, 'stale\n', 'utf8');
+
+      const plan = createCompatibilityPlan({
+        configRoot,
+        repoRoot,
+        homeDir,
+        platform: 'linux',
+      });
+
+      await syncLocalToRepo(plan, null);
+
+      const repoSkillLink = path.join(repoRoot, 'config', 'skills', 'superpowers');
+      const repoPluginLink = path.join(repoRoot, 'config', 'plugins', 'superpowers.js');
+
+      expect((await lstat(repoSkillLink)).isSymbolicLink()).toBe(true);
+      expect((await lstat(repoPluginLink)).isSymbolicLink()).toBe(true);
+      expect(await readlink(repoSkillLink)).toBe('../superpowers/skills');
+      expect(await readlink(repoPluginLink)).toBe(
+        '../superpowers/.opencode/plugins/superpowers.js'
+      );
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('writeExtraPathManifest', () => {

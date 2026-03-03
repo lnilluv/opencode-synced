@@ -525,7 +525,7 @@ async function ensureRelativeSymlink(linkPath: string, targetPath: string): Prom
 
   const existing = await getPathLstat(linkPath);
   if (existing && !existing.isSymbolicLink()) {
-    return;
+    await removePath(linkPath);
   }
 
   if (existing?.isSymbolicLink()) {

@@ -384,7 +384,7 @@ async function ensureRelativeSymlink(linkPath, targetPath) {
     const expectedLinkValue = path.relative(path.dirname(linkPath), expectedTarget);
     const existing = await getPathLstat(linkPath);
     if (existing && !existing.isSymbolicLink()) {
-        return;
+        await removePath(linkPath);
     }
     if (existing?.isSymbolicLink()) {
         const currentLinkValue = await fs.readlink(linkPath);
